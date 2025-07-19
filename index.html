@@ -164,11 +164,11 @@
       // Show final result text with styled color
       finalResultCell.textContent = valuationResult;
       finalResultCell.classList.remove("text-green-700", "text-yellow-700", "text-red-700");
-      if (valuationResult === "Undervalued") {
+      if (valuationResult === "Undervalued (Buy)") {
         finalResultCell.classList.add("text-green-700");
-      } else if (valuationResult === "Fairly Valued") {
+      } else if (valuationResult === "Fairly Valued (Hold)") {
         finalResultCell.classList.add("text-yellow-700");
-      } else if (valuationResult === "Overvalued") {
+      } else if (valuationResult === "Overvalued (Sell)") {
         finalResultCell.classList.add("text-red-700");
       } else {
         finalResultCell.classList.add("text-gray-700");
