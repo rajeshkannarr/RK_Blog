@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Valuation Analysis</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+  </style>
+</head>
+<body>
+  <main class="container mx-auto p-6 mt-12 bg-white rounded-xl shadow-md ring-1 ring-gray-200">
+    <h1 class="text-3xl font-extrabold text-center mb-8 text-blue-900">Stock Valuation Analysis</h1>
+
+    <form id="valuationForm" class="space-y-6">
+      <div>
+        <label for="stockPrice" class="block font-semibold text-gray-700 mb-1">Stock Price ($)</label>
+        <input type="number" id="stockPrice" step="0.01" min="0" required placeholder="e.g. 120.50" class="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label for="eps" class="block font-semibold text-gray-700 mb-1">EPS (Earnings Per Share)</label>
+        <input type="number" id="eps" step="0.01" min="0" required placeholder="e.g. 5.25" class="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label for="pb" class="block font-semibold text-gray-700 mb-1">P/B (Price to Book Ratio)</label>
+        <input type="number" id="pb" step="0.01" min="0" required placeholder="e.g. 3.5" class="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label for="debtEquity" class="block font-semibold text-gray-700 mb-1">Debt to Equity Ratio</label>
+        <input type="number" id="debtEquity" step="0.01" min="0" required placeholder="e.g. 0.8" class="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label for="roe" class="block font-semibold text-gray-700 mb-1">Return on Equity (%)</label>
+        <input type="number" id="roe" step="0.01" min="0" max="100" required placeholder="e.g. 15.3" class="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label for="industryPe" class="block font-semibold text-gray-700 mb-1">Industry Average P/E</label>
+        <input type="number" id="industryPe" step="0.01" min="0" required placeholder="e.g. 18.2" class="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white font-semibold py-2 rounded-md hover:from-blue-700 hover:to-blue-500 transition">Analyze Valuation</button>
+      </div>
+    </form>
+
+    <section id="resultSection" class="mt-8 p-4 rounded-md hidden" aria-live="polite" aria-atomic="true">
+      <h2 class="text-xl font-bold mb-3 text-center">Valuation Result</h2>
+      <div class="overflow-x-auto">
+      <table class="min-w-full table-auto border-collapse border border-gray-300 text-gray-800">
+        <thead class="bg-blue-100">
+          <tr>
+            <th class="border border-gray-300 px-4 py-2 text-left">Metric</th>
+            <th class="border border-gray-300 px-4 py-2 text-left">Value</th>
+          </tr>
+        </thead>
+        <tbody id="resultTableBody">
+          <!-- dynamically filled -->
+        </tbody>
+        <tfoot class="bg-blue-50">
+          <tr>
+            <td class="border border-gray-300 px-4 py-2 font-semibold">Result</td>
+            <td id="finalResult" class="border border-gray-300 px-4 py-2 font-bold"></td>
+          </tr>
+        </tfoot>
+      </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('valuationForm');
+    const resultSection = document.getElementById('resultSection');
+    const resultTableBody = document.getElementById('resultTableBody');
+    const finalResultCell = document.getElementById('finalResult');
+
+    function calculatePE(stockPrice, eps) {
+      return eps === 0 ? 0 : stockPrice / eps;
+    }
+
+    function valuationAnalysis(estimatedPe, industryPe) {
+      /*
+        Logic to determine valuation result based on P/E comparison:
+        - If estimated P/E is more than 10% above industry average => Overvalued
+        - If estimated P/E within ±10% of industry average => Fairly valued
+        - If estimated P/E is more than 10% below industry average => Undervalued
+      */
+      if (industryPe === 0) return "Industry P/E not valid";
+
+      const diff = estimatedPe - industryPe;
+      const pctDiff = (diff / industryPe) * 100;
+
+      if (pctDiff > 10) {
+        return "Overvalued";
+      } else if (pctDiff < -10) {
+        return "Undervalued";
+      } else {
+        return "Fairly Valued";
+      }
+    }
+
+    function formatNumber(num, decimals = 2) {
+      return Number(num).toFixed(decimals);
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      // Fetch inputs
+      const stockPrice = parseFloat(form.stockPrice.value);
+      const eps = parseFloat(form.eps.value);
+      const pb = parseFloat(form.pb.value);
+      const debtEquity = parseFloat(form.debtEquity.value);
+      const roe = parseFloat(form.roe.value);
+      const industryPe = parseFloat(form.industryPe.value);
+
+      // Calculate P/E from inputs (exclude industry PE from calculation)
+      const estimatedPe = calculatePE(stockPrice, eps);
+
+      // Determine valuation result
+      const valuationResult = valuationAnalysis(estimatedPe, industryPe);
+
+      // Prepare results table content
+      const rows = [
+        { label: "Stock Price ($)", value: formatNumber(stockPrice) },
+        { label: "EPS", value: formatNumber(eps) },
+        { label: "P/E (Calculated)", value: formatNumber(estimatedPe) },
+        { label: "P/B", value: formatNumber(pb) },
+        { label: "Debt to Equity Ratio", value: formatNumber(debtEquity) },
+        { label: "Return on Equity (%)", value: formatNumber(roe) },
+        { label: "Industry Average P/E", value: formatNumber(industryPe) }
+      ];
+
+      // Clear previous results
+      resultTableBody.innerHTML = "";
+
+      // Add rows to result table
+      rows.forEach(({ label, value }) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="border border-gray-300 px-4 py-2">${label}</td>
+          <td class="border border-gray-300 px-4 py-2">${value}</td>
+        `;
+        resultTableBody.appendChild(tr);
+      });
+
+      // Show final result text with styled color
+      finalResultCell.textContent = valuationResult;
+      finalResultCell.classList.remove("text-green-700", "text-yellow-700", "text-red-700");
+      if (valuationResult === "Undervalued") {
+        finalResultCell.classList.add("text-green-700");
+      } else if (valuationResult === "Fairly Valued") {
+        finalResultCell.classList.add("text-yellow-700");
+      } else if (valuationResult === "Overvalued") {
+        finalResultCell.classList.add("text-red-700");
+      } else {
+        finalResultCell.classList.add("text-gray-700");
+      }
+
+      // Show the result section
+      resultSection.classList.remove("hidden");
+      // Scroll result into view for better UX
+      resultSection.scrollIntoView({ behavior: "smooth" });
+    });
+  </script>
+</body>
+</html>
+
